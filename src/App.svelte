@@ -1,13 +1,15 @@
 <script>
   import { onMount } from 'svelte';
   import cytoscape from 'cytoscape';
-  import coseBilkent from 'cytoscape-cose-bilkent';
-  cytoscape.use(coseBilkent);
+  import elk from 'cytoscape-elk';
+
+  cytoscape.use(elk);
 
   let cy;
 
   let uploadStatus = 'No file uploaded.';
   let showOTEdges = true;
+  let showEdgeWeights = true;
   let showUnselected = true;
   let selectedNode;
   let transportPlan;
@@ -58,20 +60,25 @@
           style: {
             'line-color': '#f00',
             'target-arrow-color': '#f00',
-            label: 'data(weight)',
             opacity: 1
           }
         },
         {
           selector: 'edge[group="cross"].highlighted',
           style: {
-            width: 'mapData(weight, 0, 1, 2, 20)'
+            width: 'mapData(displayWeight, 0, 1, 2, 20)'
           }
         },
         {
           selector: '.all-hide',
           style: {
             visibility: 'hidden'
+          }
+        },
+        {
+          selector: 'edge.highlighted.show-weights',
+          style: {
+            label: 'data(weight)'
           }
         }
       ]
@@ -151,8 +158,10 @@
 
     for (let i = 0; i < transport.length; i++) {
       for (let j = 0; j < transport[0].length; j++) {
-        elements.push({ data: { id: `cross${i}_${j}`, source: 'A' + i.toString(),
-          target: 'B' + j.toString(), weight: transport[i][j], group: 'cross' } });
+        if (transport[i][j] != 0) {
+          elements.push({ data: { id: `cross${i}_${j}`, source: 'A' + i.toString(),
+            target: 'B' + j.toString(), weight: transport[i][j], displayWeight: Math.sqrt(transport[i][j]), group: 'cross' } });
+        }
       }
     }
 
@@ -163,19 +172,19 @@
     cy.remove(cy.elements('*'));
     cy.add(elements);
 
-    cy.layout({ name: 'cose-bilkent', animate: false, fit: true }).run();
+    cy.layout({ name: 'elk', animate: false, fit: true, stop: () => {
+      let bbA = cy.getElementById('A').boundingBox();
+      let bbB = cy.getElementById('B').boundingBox();
 
-
-    let bbA = cy.getElementById('A').boundingBox();
-    let bbB = cy.getElementById('B').boundingBox();
-
-    cy.getElementById('A').position({ x: 0, y: 0 });
-    cy.getElementById('B').position({ x: bbA.w / 2 + bbB.w / 2 + 50, y: 0 });
-    cy.fit(undefined, 50);
+      cy.getElementById('A').position({ x: 0, y: 0 });
+      cy.getElementById('B').position({ x: bbA.w / 2 + bbB.w / 2 + 50, y: 0 });
+      cy.fit(undefined, 50);
+    } }).run();
 
     selectedNode = undefined;
 
     updateShowUnselected();
+    updateShowEdgeWeights();
     updateShowOTEdges();
   }
 
@@ -202,6 +211,14 @@
 
   function updateShowOTEdges() {
     cy.elements('edge[group="cross"]').style('display', showOTEdges ? 'element' : 'none');
+  }
+
+  function updateShowEdgeWeights() {
+    if (showEdgeWeights) {
+      cy.edges().addClass('show-weights');
+    } else {
+      cy.edges().removeClass('show-weights');
+    }
   }
 
   function updateShowUnselected() {
@@ -288,6 +305,10 @@
       Show unselected:
       <input type="checkbox" bind:checked={showUnselected} on:change={updateShowUnselected} />
     </label>
+    <label>
+      Show edge weights:
+      <input type="checkbox" bind:checked={showEdgeWeights} on:change={updateShowEdgeWeights} />
+    </label>
     <span>{uploadStatus}</span>
   </div>
   <div class="main">
@@ -313,6 +334,7 @@
           </thead>
           <tbody>
             {#each getTransport(selectedNode) as trans}
+              {#if trans.amount != 0}
               <tr>
                 <th>
                   {trans.name}
@@ -321,6 +343,7 @@
                   {trans.amount}
                 </td>
               </tr>
+              {/if}
             {/each}
           </tbody>
         </table>
