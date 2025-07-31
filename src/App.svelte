@@ -25,6 +25,17 @@
       },
       style: [
         {
+          selector: ':parent',
+          style: {
+            label: 'data(label)',
+            'text-valign': 'top',
+            'text-halign': 'center',
+            'text-margin-y': -15,
+            'font-size': 24,
+            'font-weight': 'bold'
+          }
+        },
+        {
           selector: 'node[group="A"], node[group="B"]',
           style: {
             'background-color': '#666',
@@ -149,8 +160,8 @@
 
   function buildElements(a, b, transport) {
     let elements = [
-      { data: { id: 'A', label: 'A' } },
-      { data: { id: 'B', label: 'B' } }
+      { data: { id: 'A', label: a.name === undefined ? '' : a.name } },
+      { data: { id: 'B', label: b.name === undefined ? '' : b.name } }
     ];
 
     elements = elements.concat(getGraphElements(a, 'A'));
@@ -160,7 +171,7 @@
       for (let j = 0; j < transport[0].length; j++) {
         if (transport[i][j] != 0) {
           elements.push({ data: { id: `cross${i}_${j}`, source: 'A' + i.toString(),
-            target: 'B' + j.toString(), weight: transport[i][j], displayWeight: Math.sqrt(transport[i][j]), group: 'cross' } });
+            target: 'B' + j.toString(), weight: Math.round(transport[i][j] * 10000) / 10000, displayWeight: Math.sqrt(transport[i][j]), group: 'cross' } });
         }
       }
     }
@@ -231,16 +242,36 @@
 
 <style>
   .layout {
-    margin: 0;
     display: flex;
     flex-direction: column;
     height: 100vh;
   }
 
+  .top-bar label {
+    display: flex;
+    align-items: center;
+    gap: 0.4em;
+    font-weight: 500;
+  }
+
   .top-bar {
-    padding: 10px;
-    background-color: #f3f3f3;
-    border-bottom: 1px solid #ccc;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    padding: 10px 20px;
+    background-color: #ffffff;
+    border-bottom: 1px solid #ddd;
+  }
+
+  .controls-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    align-items: center;
+  }
+
+  input[type="file"] {
+    padding: 4px;
   }
 
   .main {
@@ -253,68 +284,98 @@
     flex: 1;
     min-width: 0;
     height: 100%;
+    background-color: #fdfdfd;
   }
 
   .sidebar {
-    width: 500px;
-    border-left: 1px solid #ccc;
-    padding: 10px;
+    width: 400px;
+    max-width: 100%;
+    border-left: 1px solid #e0e0e0;
+    padding: 16px;
     overflow-y: auto;
     background-color: #fafafa;
+    box-shadow: inset 4px 0 6px -6px rgba(0, 0, 0, 0.05);
+  }
+
+  .sidebar h3 {
+    margin-top: 0;
+    font-size: 1.1rem;
+    border-bottom: 1px solid #ccc;
+    padding-bottom: 4px;
   }
 
   table {
+    width: 100%;
     border-collapse: collapse;
-    border: 2px solid rgb(140 140 140);
-    font-family: sans-serif;
-    font-size: 0.8rem;
-    letter-spacing: 1px;
+    font-size: 0.9rem;
+    margin-top: 12px;
+    background-color: white;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    overflow: hidden;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
   }
 
-  thead {
-    background-color: rgb(228 240 245);
+  thead th {
+    background-color: #d6edf8;
+    font-weight: 600;
+    text-align: left;
+    padding: 10px;
   }
 
-  th,
-  td {
-    border: 1px solid rgb(160 160 160);
-    padding: 8px 10px;
-  }
-
-  td:last-of-type {
+  th[colspan="2"] {
+    background-color: #bde3f4;
+    font-size: 1rem;
     text-align: center;
   }
 
-  tbody > tr:nth-of-type(even) {
-    background-color: rgb(237 238 242);
+  td, th {
+    padding: 8px 10px;
+    border: 1px solid #ccc;
   }
 
+  tbody tr:nth-child(even) {
+    background-color: #f4f7fb;
+  }
+
+  tbody tr:hover {
+    background-color: #e7f3ff;
+  }
+
+  td:last-child {
+    text-align: center;
+  }
 </style>
 
 <div class="layout">
   <div class="top-bar">
-    <label>
-      Upload transport JSON:
-      <input type="file" accept=".json" on:change={handleGraphUpload} />
-    </label>
-    <label>
-      Show OT edges:
-      <input type="checkbox" bind:checked={showOTEdges} on:change={updateShowOTEdges} />
-    </label>
-    <label>
-      Show unselected:
-      <input type="checkbox" bind:checked={showUnselected} on:change={updateShowUnselected} />
-    </label>
-    <label>
-      Show edge weights:
-      <input type="checkbox" bind:checked={showEdgeWeights} on:change={updateShowEdgeWeights} />
-    </label>
-    <span>{uploadStatus}</span>
+    <div class="controls-row">
+      <label>
+        Upload transport JSON:
+        <input type="file" accept=".json" on:change={handleGraphUpload} />
+      </label>
+      <span>{uploadStatus}</span>
+    </div>
+    <div class="controls-row">
+      <label>
+        Show OT edges:
+        <input type="checkbox" bind:checked={showOTEdges} on:change={updateShowOTEdges} />
+      </label>
+      <label>
+        Show unselected:
+        <input type="checkbox" bind:checked={showUnselected} on:change={updateShowUnselected} />
+      </label>
+      <label>
+        Show edge weights:
+        <input type="checkbox" bind:checked={showEdgeWeights} on:change={updateShowEdgeWeights} />
+      </label>
+    </div>
+    
   </div>
   <div class="main">
     <div id="cy"></div>
     <div class="sidebar">
-      <h3>Details</h3>
+      <h3>Mass Transport from Selected</h3>
       {#if typeof selectedNode !== 'undefined'}
         <table>
           <thead>
@@ -340,7 +401,7 @@
                   {trans.name}
                 </th>
                 <td>
-                  {trans.amount}
+                  {Math.round(trans.amount * 10000) / 10000}
                 </td>
               </tr>
               {/if}

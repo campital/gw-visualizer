@@ -4,3 +4,10 @@ html, body {
   height: 100%;
   width: 100%;
 }
+
+body {
+  font-family: 'Segoe UI', sans-serif;
+  font-size: 14px;
+  background-color: #f5f7fa;
+  color: #222;
+}
