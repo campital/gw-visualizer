@@ -25,7 +25,7 @@ export const buildElements = async (
   // Add transport edges
   for (let i = 0; i < transport.length; i++) {
     for (let j = 0; j < transport[0].length; j++) {
-      if (transport[i][j] !== 0) {
+      if (transport[i][j] > 0.001) {
         elements.push({
           data: {
             id: `cross${i}_${j}`,
@@ -44,8 +44,6 @@ export const buildElements = async (
   const enhancedElements = await enhanceElementsWithImages(elements);
   return enhancedElements;
 };
-
-
 
 export const getGraphElements = (
   graphData,
@@ -103,8 +101,11 @@ export const getGraphElements = (
   // Add internal edges
   for (let i = 0; i < graphData.adjacency.length; i++) {
     for (const edge of graphData.adjacency[i]) {
-      const weight = typeof edge.weight === "undefined" ? 1 : edge.weight;
+      if (edge.id === i) {
+        continue;
+      }
 
+      const weight = typeof edge.weight === "undefined" ? 1 : edge.weight;
       const edgeElement = {
         data: {
           id: `${group}${i}_${edge.id}`,
@@ -114,7 +115,6 @@ export const getGraphElements = (
           group: group,
         },
       };
-
       elements.push(edgeElement);
     }
   }
@@ -122,19 +122,29 @@ export const getGraphElements = (
   return elements;
 };
 
-export const getTransport = (nodeId, transportPlan, cy, marginalDist1, marginalDist2) => {
+export const getTransport = (
+  nodeId,
+  transportPlan,
+  cy,
+  marginalDist1,
+  marginalDist2
+) => {
   if (!transportPlan || !cy) return [];
 
   const group = nodeId[0];
   const ind = parseInt(nodeId.substring(1));
   const result = [];
 
-  // ← AGREGAR ESTOS CONSOLE.LOG PARA DEBUGGEAR:
   console.log("=== DEBUG getTransport ===");
   console.log("nodeId:", nodeId, "group:", group, "index:", ind);
   console.log("marginalDist1:", marginalDist1);
   console.log("marginalDist2:", marginalDist2);
-  console.log("transportPlan shape:", transportPlan.length, "x", transportPlan[0]?.length);
+  console.log(
+    "transportPlan shape:",
+    transportPlan.length,
+    "x",
+    transportPlan[0]?.length
+  );
 
   if (group === "A") {
     const massValues = transportPlan[ind];
@@ -151,24 +161,29 @@ export const getTransport = (nodeId, transportPlan, cy, marginalDist1, marginalD
       if (massValues[i] !== 0) {
         const targetNode = cy.getElementById(`B${i}`);
         if (targetNode.length > 0) {
-          const percentage = marginalValue 
-            ? (massValues[i] / marginalValue) * 100 
-            : totalSentByThisNode > 0 ? (massValues[i] / totalSentByThisNode) * 100 : 0;
-          
-          console.log(`Connection to B${i}: amount=${massValues[i]}, percentage=${percentage}`);
-          
-          result.push({
-            name: targetNode.data().label,
-            amount: massValues[i],
-            percentage: percentage
-          });
+          const percentage = marginalValue
+            ? (massValues[i] / marginalValue) * 100
+            : totalSentByThisNode > 0
+            ? (massValues[i] / totalSentByThisNode) * 100
+            : 0;
+          console.log(
+            `Connection to B${i}: amount=${massValues[i]}, percentage=${percentage}`
+          );
+            result.push({
+              name: targetNode.data().label,
+              amount: massValues[i],
+              percentage: percentage,
+            });
         }
       }
     }
   } else if (group === "B") {
     const massValues = transportPlan.map((x) => x[ind]);
     const marginalValue = marginalDist2 ? marginalDist2[ind] : null;
-    const totalReceivedByThisNode = massValues.reduce((sum, val) => sum + val, 0);
+    const totalReceivedByThisNode = massValues.reduce(
+      (sum, val) => sum + val,
+      0
+    );
 
     console.log("Group B - massValues:", massValues);
     console.log("Group B - marginalValue:", marginalValue);
@@ -178,17 +193,22 @@ export const getTransport = (nodeId, transportPlan, cy, marginalDist1, marginalD
       if (massValues[i] !== 0) {
         const targetNode = cy.getElementById(`A${i}`);
         if (targetNode.length > 0) {
-          const percentage = marginalValue 
-            ? (massValues[i] / marginalValue) * 100 
-            : totalReceivedByThisNode > 0 ? (massValues[i] / totalReceivedByThisNode) * 100 : 0;
-          
-          console.log(`Connection to A${i}: amount=${massValues[i]}, percentage=${percentage}`);
-          
-          result.push({
-            name: targetNode.data().label,
-            amount: massValues[i],
-            percentage: percentage
-          });
+          const percentage = marginalValue
+            ? (massValues[i] / marginalValue) * 100
+            : totalReceivedByThisNode > 0
+            ? (massValues[i] / totalReceivedByThisNode) * 100
+            : 0;
+
+          console.log(
+            `Connection to A${i}: amount=${massValues[i]}, percentage=${percentage}`
+          );
+          if (percentage >= 1.0) {
+            result.push({
+              name: targetNode.data().label,
+              amount: massValues[i],
+              percentage: percentage,
+            });
+          }
         }
       }
     }
@@ -249,35 +269,39 @@ class SimpleAnimalImageLoader {
   async tryINaturalist(genus, species) {
     try {
       if (!genus || !species) return null;
-      
+
       const scientificName = `${genus} ${species}`;
       console.log(`Searching iNaturalist: ${scientificName}`);
-      
+
       const response = await fetch(
-        `https://api.inaturalist.org/v1/taxa?q=${encodeURIComponent(scientificName)}&per_page=1&rank=species`
+        `https://api.inaturalist.org/v1/taxa?q=${encodeURIComponent(
+          scientificName
+        )}&per_page=1&rank=species`
       );
-      
+
       if (!response.ok) {
         console.log(`iNaturalist response not ok: ${response.status}`);
         return null;
       }
-      
+
       const data = await response.json();
-      
+
       if (data.results && data.results.length > 0) {
         const result = data.results[0];
-        
+
         if (result.default_photo) {
           // Usar un proxy CORS para las imágenes
           const originalUrl = result.default_photo.medium_url;
-          const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(originalUrl)}`;
-          
+          const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(
+            originalUrl
+          )}`;
+
           console.log(`Found: ${result.name} with image`);
           return proxyUrl;
         }
       }
     } catch (error) {
-      console.log('iNaturalist error:', error.message);
+      console.log("iNaturalist error:", error.message);
     }
     return null;
   }
@@ -288,40 +312,48 @@ const imageLoader = new SimpleAnimalImageLoader();
 
 // Function to enhance elements with images
 export const enhanceElementsWithImages = async (elements) => {
-  console.log('Loading animal images...');
-  
+  console.log("Loading animal images...");
+
   let loaded = 0;
   let failed = 0;
-  
-  const animalElements = elements.filter(el => 
-    (el.data?.group === "A" || el.data?.group === "B") && 
-    el.data?.id !== "A" && el.data?.id !== "B" &&
-    el.data?.scientific_name && el.data.scientific_name.trim()
+
+  const animalElements = elements.filter(
+    (el) =>
+      (el.data?.group === "A" || el.data?.group === "B") &&
+      el.data?.id !== "A" &&
+      el.data?.id !== "B" &&
+      el.data?.scientific_name &&
+      el.data.scientific_name.trim()
   );
-  
+
   const total = animalElements.length;
   console.log(`Total animals to process: ${total}`);
-  
+
   for (let i = 0; i < animalElements.length; i++) {
     const element = animalElements[i];
-    
-    const scientificName = element.data.scientific_name || element.data.label || '';
-    const commonName = element.data.common_name || '';
-    
-    const nameParts = scientificName.replace(/_/g, ' ').split(' ');
-    const genus = nameParts[0] || '';
-    const species = nameParts[1] || '';
-    
+
+    const scientificName =
+      element.data.scientific_name || element.data.label || "";
+    const commonName = element.data.common_name || "";
+
+    const nameParts = scientificName.replace(/_/g, " ").split(" ");
+    const genus = nameParts[0] || "";
+    const species = nameParts[1] || "";
+
     if (!genus || !species) {
       console.log(`Skipping element without valid names: ${scientificName}`);
       continue;
     }
-    
+
     console.log(`Searching: ${genus} ${species} (${commonName})`);
-    
+
     try {
-      const imageUrl = await imageLoader.getAnimalImage(genus, species, commonName);
-      
+      const imageUrl = await imageLoader.getAnimalImage(
+        genus,
+        species,
+        commonName
+      );
+
       if (imageUrl) {
         element.data.animalImage = imageUrl;
         loaded++;
@@ -330,17 +362,16 @@ export const enhanceElementsWithImages = async (elements) => {
         failed++;
         console.log(`No image: ${genus} ${species}`);
       }
-      
+
       if (i % 3 === 0) {
-        await new Promise(resolve => setTimeout(resolve, 200));
+        await new Promise((resolve) => setTimeout(resolve, 200));
       }
-      
     } catch (error) {
       failed++;
       console.warn(`Error: ${genus} ${species}`);
     }
   }
-  
+
   console.log(`Final result: ${loaded} images loaded, ${failed} without image`);
   return elements;
 };

@@ -17,6 +17,7 @@ export const marginalDistribution2 = writable(null);
 export const selfAlignment1 = writable(null);
 export const selfAlignment2 = writable(null);
 
+
 // Verify if we have data
 export const hasData = derived(
   [cytoscapeInstance],

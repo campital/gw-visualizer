@@ -5,9 +5,7 @@
   export let nodeId;
 
   $: allTransportConnections = getTransport(nodeId, $transportPlan, $cytoscapeInstance, $marginalDistribution1, $marginalDistribution2);
-  
-  // Filter conections more than 0.01%
-  $: transportConnections = allTransportConnections.filter(trans => trans.percentage >= 0.01);
+  $: transportConnections = allTransportConnections.filter(trans => trans.percentage >= 1.0);
 
   // Format percentage
   function formatPercentage(percentage) {
@@ -29,7 +27,7 @@
       <span class="transport-amount">{formatPercentage(trans.percentage)}</span>
     </div>
   {:else}
-    <div class="no-transport">No significant transport connections (>0.01%)</div>
+    <div class="no-transport">No significant transport connections (>1%)</div>
   {/each}
   
   {#if allTransportConnections.length > transportConnections.length}
