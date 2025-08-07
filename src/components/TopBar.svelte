@@ -11,6 +11,10 @@
     cytoscapeInstance,
     transportPlan,
     selectedNode,
+    marginalDistribution1,
+    marginalDistribution2,
+    selfAlignment1,
+    selfAlignment2,
   } from "../stores/graphStore.js";
   import { handleFileUpload } from "../utils/fileUtils.js";
   import { buildElements } from "../utils/graphDataUtils.js";
@@ -18,13 +22,13 @@
 
   let fileInput;
 
-  const onFileChange = (event) => {
+  const onFileChange = async (event) => {
     const file = event.target.files[0];
     uploadStatus.set("Loading file...");
 
-    handleFileUpload(file, (result) => {
+    handleFileUpload(file, async (result) => {
       if (result.success) {
-        const newElements = buildElements(
+        const newElements = await buildElements(
           result.data.a,
           result.data.b,
           result.data.transport,
@@ -33,8 +37,22 @@
           $showCommonNames,
         );
 
-        refreshGraph($cytoscapeInstance, newElements);
+        if ($cytoscapeInstance) {
+          refreshGraph($cytoscapeInstance, newElements);
+        } else {
+          console.warn("Cytoscape instance not ready yet");
+          // Esperar un poco y reintentar
+          setTimeout(() => {
+            if ($cytoscapeInstance) {
+              refreshGraph($cytoscapeInstance, newElements);
+            }
+          }, 100);
+        }
         transportPlan.set(result.data.transport);
+        marginalDistribution1.set(result.data.marginal_distribution1 || null);
+        marginalDistribution2.set(result.data.marginal_distribution2 || null);
+        selfAlignment1.set(result.data.t1 || null);
+        selfAlignment2.set(result.data.t2 || null);
         selectedNode.set(undefined);
         uploadStatus.set("File loaded successfully!");
       } else {

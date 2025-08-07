@@ -11,7 +11,7 @@ export const createCytoscapeInstance = (container) => {
     container,
     elements: [],
     layout: { name: "preset" },
-    style: getCytoscapeStyles()
+    style: getCytoscapeStyles(),
   });
 };
 
@@ -36,7 +36,30 @@ export const getCytoscapeStyles = () => {
       },
     },
     {
-      selector: 'node[group="A"]',
+      selector: 'node[group="A"][animalImage]',
+      style: {
+        "background-image": "data(animalImage)",
+        "background-fit": "cover",
+        "background-width": "100%",
+        "background-height": "100%",
+        label: "data(label)",
+        color: "white",
+        "text-valign": "bottom",
+        "text-halign": "center",
+        "text-outline-width": 2,
+        "text-outline-color": "#2980b9",
+        "font-size": "mapData(size, 20, 60, 8, 14)",
+        "font-weight": "bold",
+        width: "data(size)",
+        height: "data(size)",
+        "border-width": 3,
+        "border-color": "#2980b9",
+        "text-margin-y": -8,
+        "box-shadow": "0px 2px 8px rgba(0,0,0,0.3)",
+      },
+    },
+    {
+      selector: 'node[group="A"][!animalImage]',
       style: {
         "background-color": "#3498db",
         label: "data(label)",
@@ -54,7 +77,30 @@ export const getCytoscapeStyles = () => {
       },
     },
     {
-      selector: 'node[group="B"]',
+      selector: 'node[group="B"][animalImage]',
+      style: {
+        "background-image": "data(animalImage)",
+        "background-fit": "cover",
+        "background-width": "100%",
+        "background-height": "100%",
+        label: "data(label)",
+        color: "white",
+        "text-valign": "bottom",
+        "text-halign": "center",
+        "text-outline-width": 2,
+        "text-outline-color": "#c0392b",
+        "font-size": "mapData(size, 20, 60, 8, 14)",
+        "font-weight": "bold",
+        width: "data(size)",
+        height: "data(size)",
+        "border-width": 3,
+        "border-color": "#c0392b",
+        "text-margin-y": -8,
+        "box-shadow": "0px 2px 8px rgba(0,0,0,0.3)",
+      },
+    },
+    {
+      selector: 'node[group="B"][!animalImage]',
       style: {
         "background-color": "#e74c3c",
         label: "data(label)",
@@ -158,14 +204,13 @@ export const getCytoscapeStyles = () => {
     },
   ];
 
-  // Cast to any to bypass strict TypeScript checking for Cytoscape styles
   return styles;
 };
 
 export const refreshGraph = (cy, elements) => {
   cy.remove(cy.elements("*"));
   cy.add(elements);
-  
+
   cy.layout({
     name: "elk",
     animate: false,
@@ -277,10 +322,14 @@ export const updateShowUnselected = (cy, showUnselected) => {
   }
 };
 
-export const handleNodeTap = (evt, selectedNodeStore, updateShowUnselectedCallback) => {
+export const handleNodeTap = (
+  evt,
+  selectedNodeStore,
+  updateShowUnselectedCallback
+) => {
   const cy = evt.cy;
   const node = evt.target;
-  
+
   if (node === cy) {
     cy.elements().removeClass("highlighted");
     selectedNodeStore.set(undefined);
