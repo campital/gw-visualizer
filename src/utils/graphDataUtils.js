@@ -169,11 +169,11 @@ export const getTransport = (
           console.log(
             `Connection to B${i}: amount=${massValues[i]}, percentage=${percentage}`
           );
-            result.push({
-              name: targetNode.data().label,
-              amount: massValues[i],
-              percentage: percentage,
-            });
+          result.push({
+            name: targetNode.data().label,
+            amount: massValues[i],
+            percentage: percentage,
+          });
         }
       }
     }
@@ -202,13 +202,11 @@ export const getTransport = (
           console.log(
             `Connection to A${i}: amount=${massValues[i]}, percentage=${percentage}`
           );
-          if (percentage >= 1.0) {
-            result.push({
-              name: targetNode.data().label,
-              amount: massValues[i],
-              percentage: percentage,
-            });
-          }
+          result.push({
+            name: targetNode.data().label,
+            amount: massValues[i],
+            percentage: percentage,
+          });
         }
       }
     }
